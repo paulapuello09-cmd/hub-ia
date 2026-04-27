@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hub IA — Panel Interno</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F6F2;
+  --bg2:#FFFFFF;
+  --bg3:#EFEDE7;
+  --border:#E2DFD8;
+  --border2:#D0CCC3;
+  --text:#1A1917;
+  --text2:#5C5A55;
+  --text3:#9C9A95;
+  --accent:#3D4F8C;
+  --accent2:#E8EBF5;
+  --green:#2D6A4F;
+  --green-bg:#D8F3DC;
+  --red:#A32D2D;
+  --red-bg:#FCEBEB;
+  --amber:#854F0B;
+  --amber-bg:#FEF3CD;
+  --radius:8px;
+  --radius-lg:12px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.logo-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.nav{flex:1;padding:8px 8px;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:12px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;font-size:13px;color:var(--text2);cursor:pointer;border-radius:var(--radius);transition:all 0.15s;margin-bottom:1px}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--accent2);color:var(--accent);font-weight:500}
+.nav-icon{width:15px;height:15px;flex-shrink:0}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10}
+.page-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.2px}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.date-chip{font-size:11px;color:var(--text3);background:var(--bg3);padding:4px 10px;border-radius:20px;font-family:'DM Mono',monospace}
+.btn{padding:6px 14px;font-size:12px;font-weight:500;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.btn:hover{background:var(--bg3)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#2E3D6B;border-color:#2E3D6B}
+.btn-sm{padding:4px 10px;font-size:11px}
+.content{padding:20px 24px;flex:1}
+.section{display:none}
+.section.active{display:block}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.metric-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.metric-value{font-size:24px;font-weight:600;color:var(--text);letter-spacing:-0.5px;font-family:'DM Mono',monospace}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* TABLE */
+.table-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px}
+.table-header{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg3)}
+.table-title{font-size:12px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.04em}
+table{width:100%;border-collapse:collapse}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);background:var(--bg3)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text2);font-size:13px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+.td-strong{color:var(--text);font-weight:500}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-blue{background:#E6F1FB;color:#185FA5}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+.badge-purple{background:var(--accent2);color:var(--accent)}
+
+/* ALERT */
+.alert-banner{background:var(--amber-bg);border:1px solid #FAC775;border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--amber)}
+
+/* SUB TABS */
+.sub-tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--bg3);padding:3px;border-radius:var(--radius);width:fit-content;border:1px solid var(--border)}
+.sub-tab{padding:5px 14px;font-size:12px;font-weight:500;border-radius:6px;cursor:pointer;color:var(--text3);transition:all 0.15s}
+.sub-tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+
+/* TASKS */
+.tasks-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.task-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.task-card.urgent{border-left:3px solid var(--red)}
+.task-card.warning{border-left:3px solid #EF9F27}
+.task-card.ok{border-left:3px solid var(--green)}
+.task-client{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.task-desc{font-size:12px;color:var(--text2);margin-bottom:8px}
+.task-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.task-meta{font-size:11px;color:var(--text3)}
+
+/* CLIENTS */
+.clients-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.client-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;cursor:pointer;transition:all 0.15s}
+.client-card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent2)}
+.client-avatar{width:38px;height:38px;border-radius:10px;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px}
+.client-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.client-biz{font-size:11px;color:var(--text3);margin-bottom:8px}
+.client-tags{display:flex;flex-wrap:wrap;gap:4px}
+
+/* CHECKLIST */
+.checklist-section{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.check-list{display:flex;flex-direction:column;gap:6px}
+.check-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.15s}
+.check-item:hover{background:var(--bg3)}
+.check-box{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.check-item.checked .check-box{background:var(--accent);border-color:var(--accent)}
+.check-item.checked .check-label{color:var(--text3);text-decoration:line-through}
+
+/* MEETS */
+.meets-list{display:flex;flex-direction:column;gap:10px}
+.meet-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:flex;align-items:center;gap:16px}
+.meet-date-box{background:var(--accent2);border-radius:var(--radius);padding:8px 12px;text-align:center;min-width:52px;flex-shrink:0}
+.meet-day{font-size:20px;font-weight:600;color:var(--accent);font-family:'DM Mono',monospace;line-height:1}
+.meet-month{font-size:9px;color:var(--accent);text-transform:uppercase;font-weight:600;letter-spacing:0.06em}
+.meet-info{flex:1}
+.meet-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.meet-meta{font-size:11px;color:var(--text3)}
+
+/* KANBAN */
+.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start}
+.kanban-col{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px}
+.kanban-col-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.kanban-count{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:11px;color:var(--text2);font-family:'DM Mono',monospace}
+.kanban-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px}
+.kanban-card:last-child{margin-bottom:0}
+.kanban-card-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px}
+.kanban-card-meta{font-size:11px;color:var(--text3)}
+.kanban-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.avatar-chip{background:var(--accent2);color:var(--accent);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border-radius:var(--radius-lg);width:520px;max-height:85vh;overflow-y:auto;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1}
+.modal-body{padding:20px}
+.modal-title{font-size:14px;font-weight:600;color:var(--text)}
+.close-btn{background:none;border:none;font-size:16px;cursor:pointer;color:var(--text3);padding:4px 8px;border-radius:var(--radius);transition:all 0.15s}
+.close-btn:hover{background:var(--bg3);color:var(--text)}
+
+/* FORMS */
+.field-group{margin-bottom:14px}
+.field-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;display:block}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg2);color:var(--text);outline:none;transition:all 0.15s}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 2px rgba(61,79,140,0.2);border-color:var(--accent)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+.empty-state-icon{font-size:32px;margin-bottom:12px}
+.empty-state-text{font-size:13px}
+
+/* LOADING */
+.loading{text-align:center;padding:48px;color:var(--text3);font-size:13px}
+
+/* DETAIL MODAL */
+.detail-row{display:flex;padding:10px 0;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border-bottom:none}
+.detail-key{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;width:140px;flex-shrink:0;padding-top:1px}
+.detail-val{font-size:13px;color:var(--text);flex:1}
+
+.section-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-title">⬡ Hub IA</div>
+      <div class="logo-sub">Panel interno</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Principal</div>
+      <div class="nav-item active" onclick="nav('billing',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.3"/><rect x="3" y="9" width="4" height="1.5" rx="0.5" fill="currentColor" opacity="0.6"/></svg>
+        Facturación
+      </div>
+      <div class="nav-item" onclick="nav('tasks',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="13" cy="11" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>
+        Tareas por cliente
+      </div>
+      <div class="nav-item" onclick="nav('checklist',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Checklist asistentes
+      </div>
+      <div class="nav-section">Clientes</div>
+      <div class="nav-item" onclick="nav('clients',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Fichas de clientes
+      </div>
+      <div class="nav-item" onclick="nav('meets',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Reuniones
+      </div>
+      <div class="nav-section">Equipo</div>
+      <div class="nav-item" onclick="nav('kanban',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="4" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="6" y="2" width="4" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="11" y="2" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+        Kanban equipo
+      </div>
+    </nav>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Facturación</div>
+      <div class="topbar-right">
+        <span class="date-chip" id="today-date"></span>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Agregar</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- FACTURACIÓN -->
+      <div id="s-billing" class="section active">
+        <div id="billing-alert" style="display:none" class="alert-banner">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#EF9F27" stroke-width="1.3"/><path d="M8 5v4M8 11v.5" stroke="#EF9F27" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span id="billing-alert-text"></span>
+        </div>
+        <div class="metrics">
+          <div class="metric-card"><div class="metric-label">Facturado este mes</div><div class="metric-value" id="m-total">—</div><div class="metric-sub" id="m-clientes">Cargando...</div></div>
+          <div class="metric-card"><div class="metric-label">Pagos confirmados</div><div class="metric-value" id="m-pagados">—</div><div class="metric-sub" id="m-pct" style="color:var(--green)"></div></div>
+          <div class="metric-card"><div class="metric-label">Pendientes de pago</div><div class="metric-value" id="m-pendientes" style="color:var(--red)">—</div><div class="metric-sub">Vencen el día 10</div></div>
+          <div class="metric-card"><div class="metric-label">Costo IA del mes</div><div class="metric-value" id="m-costos">—</div><div class="metric-sub" id="m-margen"></div></div>
+        </div>
+        <div class="sub-tabs">
+          <div class="sub-tab active" onclick="subTab(this,'billing','payments')">Pagos clientes</div>
+          <div class="sub-tab" onclick="subTab(this,'billing','costs')">Gastos IA</div>
+          <div class="sub-tab" onclick="subTab(this,'billing','increases')">Próximos aumentos</div>
+        </div>
+        <div id="billing-payments" class="billing-sub">
+          <div class="table-card">
+            <div class="table-header"><span class="table-title">Estado de pagos</span></div>
+            <div id="payments-table"><div class="loading">Cargando pagos...</div></div>
+          </div>
+        </div>
+        <div id="billing-costs" class="billing-sub" style="display:none">
+          <div class="table-card">
+            <div class="table-header"><span class="table-title">Historial de gastos IA</span></div>
+            <div id="costs-table"><div class="loading">Cargando gastos...</div></div>
+          </div>
+        </div>
+        <div id="billing-increases" class="billing-sub" style="display:none">
+          <div class="table-card">
+            <div class="table-header"><span class="table-title">Próximos aumentos programados</span></div>
+            <div id="increases-table"><div class="loading">Cargando aumentos...</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREAS -->
+      <div id="s-tasks" class="section">
+        <div class="metrics">
+          <div class="metric-card"><div class="metric-label">Tareas activas</div><div class="metric-value" id="t-activas">—</div></div>
+          <div class="metric-card"><div class="metric-label">Vencidas</div><div class="metric-value" id="t-vencidas" style="color:var(--red)">—</div></div>
+          <div class="metric-card"><div class="metric-label">Vencen esta semana</div><div class="metric-value" id="t-semana" style="color:var(--amber)">—</div></div>
+          <div class="metric-card"><div class="metric-label">Completadas</div><div class="metric-value" id="t-completas" style="color:var(--green)">—</div></div>
+        </div>
+        <div class="tasks-grid" id="tasks-container"><div class="loading">Cargando tareas...</div></div>
+      </div>
+
+      <!-- CHECKLIST -->
+      <div id="s-checklist" class="section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:13px;color:var(--text2)">Seleccioná un cliente para ver su checklist de asistente:</div>
+          <select id="checklist-client-select" onchange="loadChecklist()" style="width:220px">
+            <option value="">— Elegir cliente —</option>
+          </select>
+        </div>
+        <div id="checklist-container"><div class="empty-state"><div class="empty-state-icon">☑️</div><div class="empty-state-text">Seleccioná un cliente para ver su checklist</div></div></div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div id="s-clients" class="section">
+        <div class="clients-grid" id="clients-container"><div class="loading">Cargando clientes...</div></div>
+      </div>
+
+      <!-- REUNIONES -->
+      <div id="s-meets" class="section">
+        <div class="metrics">
+          <div class="metric-card"><div class="metric-label">Total agendadas</div><div class="metric-value" id="meet-total">—</div></div>
+          <div class="metric-card"><div class="metric-label">Confirmadas</div><div class="metric-value" id="meet-conf" style="color:var(--green)">—</div></div>
+          <div class="metric-card"><div class="metric-label">Sin confirmar</div><div class="metric-value" id="meet-pend" style="color:var(--amber)">—</div></div>
+          <div class="metric-card"><div class="metric-label">Esta semana</div><div class="metric-value" id="meet-week">—</div></div>
+        </div>
+        <div class="meets-list" id="meets-container"><div class="loading">Cargando reuniones...</div></div>
+      </div>
+
+      <!-- KANBAN -->
+      <div id="s-kanban" class="section">
+        <div class="kanban-board">
+          <div class="kanban-col">
+            <div class="kanban-col-title">Por hacer <span class="kanban-count" id="k-cnt-todo">0</span></div>
+            <div id="k-todo"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-title">En progreso <span class="kanban-count" id="k-cnt-prog">0</span></div>
+            <div id="k-prog"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-title">En revisión <span class="kanban-count" id="k-cnt-rev">0</span></div>
+            <div id="k-rev"></div>
+          </div>
+          <div class="kanban-col">
+            <div class="kanban-col-title">Listo <span class="kanban-count" id="k-cnt-done">0</span></div>
+            <div id="k-done"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="main-modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-title">Agregar</span>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIGURACIÓN SUPABASE ====================
+const SUPABASE_URL = 'https://vnyprbhlzjdtmupwyayk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ftOR8UEyqq_-qs2bCvG-OA_5ulDMPE3 ';
+// ===============================================================
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentPage = 'billing';
+let allClients = [];
+
+// Fecha de hoy
+const today = new Date();
+document.getElementById('today-date').textContent = today.toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const todayStr = today.toISOString().split('T')[0];
+const currentMonth = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+
+// NAV
+function nav(page, el){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('s-'+page).classList.add('active');
+  document.getElementById('page-title').textContent = {billing:'Facturación',tasks:'Tareas por cliente',checklist:'Checklist asistentes',clients:'Fichas de clientes',meets:'Reuniones',kanban:'Kanban equipo'}[page];
+  currentPage = page;
+  loadSection(page);
+}
+
+function subTab(el, section, sub){
+  el.closest('.sub-tabs').querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.'+section+'-sub').forEach(s=>s.style.display='none');
+  document.getElementById(section+'-'+sub).style.display='block';
+}
+
+// ==================== CARGA DE SECCIONES ====================
+function loadSection(page){
+  if(page==='billing') loadBilling();
+  if(page==='tasks') loadTasks();
+  if(page==='clients') loadClients();
+  if(page==='meets') loadMeets();
+  if(page==='kanban') loadKanban();
+  if(page==='checklist') loadChecklistClients();
+}
+
+// ==================== FACTURACIÓN ====================
+async function loadBilling(){
+  const mesActual = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  
+  const {data:pagos} = await sb.from('pagos').select('*, clientes(nombre)').order('created_at',{ascending:false});
+  const {data:gastos} = await sb.from('gastos_ia').select('*').order('created_at',{ascending:false});
+  const {data:aumentos} = await sb.from('aumentos').select('*, clientes(nombre)').order('fecha_aumento');
+
+  // Métricas
+  const pagosMes = pagos ? pagos.filter(p=>p.mes && p.mes.startsWith(mesActual.substring(0,7))) : [];
+  const totalFact = pagosMes.reduce((a,p)=>a+(p.monto||0),0);
+  const pagados = pagosMes.filter(p=>p.estado==='Pagado').length;
+  const pendientes = pagosMes.filter(p=>p.estado==='Pendiente').length;
+  const totalGastosMes = gastos ? gastos.filter(g=>g.mes&&g.mes.startsWith(mesActual.substring(0,7))).reduce((a,g)=>a+(g.monto||0),0) : 0;
+  const margen = totalFact>0 ? Math.round((1-totalGastosMes/totalFact)*100) : 0;
+
+  document.getElementById('m-total').textContent = '$'+totalFact.toLocaleString('es-AR');
+  document.getElementById('m-clientes').textContent = pagosMes.length+' registros este mes';
+  document.getElementById('m-pagados').textContent = pagados;
+  document.getElementById('m-pct').textContent = pagosMes.length>0 ? '↑ '+Math.round(pagados/pagosMes.length*100)+'% cobrado':'';
+  document.getElementById('m-pendientes').textContent = pendientes;
+  document.getElementById('m-costos').textContent = '$'+totalGastosMes.toLocaleString('es-AR');
+  document.getElementById('m-margen').textContent = 'Margen: '+margen+'%';
+
+  if(pendientes>0 && today.getDate()>=10){
+    document.getElementById('billing-alert').style.display='flex';
+    document.getElementById('billing-alert-text').innerHTML=`<strong>${pendientes} cliente${pendientes>1?'s':''}</strong> con pago pendiente — ya pasó el día 10 del mes`;
+  }
+
+  // Tabla pagos
+  if(!pagos||pagos.length===0){
+    document.getElementById('payments-table').innerHTML='<div class="empty-state"><div class="empty-state-icon">💳</div><div class="empty-state-text">No hay pagos registrados. Agregá el primero.</div></div>';
+  } else {
+    document.getElementById('payments-table').innerHTML=`<table><thead><tr><th>Cliente</th><th>Mes</th><th>Monto</th><th>Fecha pago</th><th>Estado</th><th></th></tr></thead><tbody>${pagos.map(p=>`
+      <tr>
+        <td class="td-strong">${p.clientes?p.clientes.nombre:'—'}</td>
+        <td>${p.mes||'—'}</td>
+        <td>$${(p.monto||0).toLocaleString('es-AR')}</td>
+        <td>${p.fecha_pago||'—'}</td>
+        <td><span class="badge ${p.estado==='Pagado'?'badge-green':p.estado==='Pendiente'?'badge-red':'badge-amber'}">${p.estado}</span></td>
+        <td>${p.estado==='Pendiente'?`<button class="btn btn-sm" onclick="marcarPagado('${p.id}')">Marcar pagado</button>`:''}
+        <button class="btn btn-sm" onclick="deletePago('${p.id}')" style="margin-left:4px">✕</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+
+  // Tabla gastos
+  if(!gastos||gastos.length===0){
+    document.getElementById('costs-table').innerHTML='<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No hay gastos registrados.</div></div>';
+  } else {
+    document.getElementById('costs-table').innerHTML=`<table><thead><tr><th>Mes</th><th>Proveedor</th><th>Concepto</th><th>Monto</th><th></th></tr></thead><tbody>${gastos.map(g=>`
+      <tr><td>${g.mes||'—'}</td><td class="td-strong">${g.proveedor||'—'}</td><td>${g.concepto||'—'}</td><td>$${(g.monto||0).toLocaleString('es-AR')}</td>
+      <td><button class="btn btn-sm" onclick="deleteGasto('${g.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
+  }
+
+  // Tabla aumentos
+  if(!aumentos||aumentos.length===0){
+    document.getElementById('increases-table').innerHTML='<div class="empty-state"><div class="empty-state-icon">📈</div><div class="empty-state-text">No hay aumentos programados.</div></div>';
+  } else {
+    document.getElementById('increases-table').innerHTML=`<table><thead><tr><th>Cliente</th><th>Monto actual</th><th>Nuevo monto</th><th>Fecha aumento</th><th>Estado</th><th></th></tr></thead><tbody>${aumentos.map(a=>{
+      const dias = Math.ceil((new Date(a.fecha_aumento)-today)/(1000*60*60*24));
+      const badge = dias<0?'badge-red':dias<30?'badge-amber':'badge-blue';
+      const label = dias<0?'Vencido':dias===0?'Hoy':dias<30?`En ${dias} días`:'Programado';
+      return `<tr><td class="td-strong">${a.clientes?a.clientes.nombre:'—'}</td><td>$${(a.monto_actual||0).toLocaleString('es-AR')}</td><td>$${(a.monto_nuevo||0).toLocaleString('es-AR')}</td><td>${a.fecha_aumento}</td><td><span class="badge ${badge}">${label}</span></td>
+      <td><button class="btn btn-sm" onclick="deleteAumento('${a.id}')">✕</button></td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+}
+
+async function marcarPagado(id){
+  const fecha = prompt('Ingresá la fecha de pago (ej: 2025-05-10):') || todayStr;
+  await sb.from('pagos').update({estado:'Pagado',fecha_pago:fecha}).eq('id',id);
+  loadBilling();
+}
+async function deletePago(id){ if(confirm('¿Eliminar este pago?')){ await sb.from('pagos').delete().eq('id',id); loadBilling(); } }
+async function deleteGasto(id){ if(confirm('¿Eliminar este gasto?')){ await sb.from('gastos_ia').delete().eq('id',id); loadBilling(); } }
+async function deleteAumento(id){ if(confirm('¿Eliminar este aumento?')){ await sb.from('aumentos').delete().eq('id',id); loadBilling(); } }
+
+// ==================== TAREAS ====================
+async function loadTasks(){
+  const {data:tareas} = await sb.from('tareas').select('*, clientes(nombre)').order('fecha_limite');
+  if(!tareas||tareas.length===0){
+    document.getElementById('tasks-container').innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">✅</div><div class="empty-state-text">No hay tareas registradas. Agregá la primera.</div></div>';
+    document.getElementById('t-activas').textContent='0';
+    document.getElementById('t-vencidas').textContent='0';
+    document.getElementById('t-semana').textContent='0';
+    document.getElementById('t-completas').textContent='0';
+    return;
+  }
+  const activas=tareas.filter(t=>t.estado!=='Completada');
+  const vencidas=tareas.filter(t=>t.estado!=='Completada'&&t.fecha_limite&&t.fecha_limite<todayStr);
+  const enSemana=tareas.filter(t=>{
+    if(!t.fecha_limite||t.estado==='Completada') return false;
+    const d=new Date(t.fecha_limite);
+    const diff=Math.ceil((d-today)/(1000*60*60*24));
+    return diff>=0&&diff<=7;
+  });
+  const completas=tareas.filter(t=>t.estado==='Completada');
+  document.getElementById('t-activas').textContent=activas.length;
+  document.getElementById('t-vencidas').textContent=vencidas.length;
+  document.getElementById('t-semana').textContent=enSemana.length;
+  document.getElementById('t-completas').textContent=completas.length;
+
+  document.getElementById('tasks-container').innerHTML=activas.map(t=>{
+    const dias = t.fecha_limite ? Math.ceil((new Date(t.fecha_limite)-today)/(1000*60*60*24)) : null;
+    const urgencia = dias===null?'ok':dias<0?'urgent':dias<=3?'warning':'ok';
+    const badge = dias===null?'badge-gray':dias<0?`badge-red`:dias<=3?'badge-amber':'badge-blue';
+    const label = dias===null?'Sin fecha':dias<0?'Vencida':dias===0?'Hoy':dias<=3?`${dias} días`:`${dias} días`;
+    return `<div class="task-card ${urgencia}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+        <div><div class="task-client">${t.clientes?t.clientes.nombre:'Sin cliente'}</div></div>
+        <span class="badge ${badge}">${label}</span>
+      </div>
+      <div class="task-desc">${t.descripcion||'Sin descripción'}</div>
+      <div style="font-size:11px;color:var(--text3)">Asignado a: ${t.asignado_a||'Sin asignar'} · Prioridad: ${t.prioridad}</div>
+      <div class="task-footer">
+        <span class="task-meta">Límite: ${t.fecha_limite||'—'}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-primary" onclick="completarTarea('${t.id}')">Completar</button>
+          <button class="btn btn-sm" onclick="deleteTask('${t.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function completarTarea(id){ await sb.from('tareas').update({estado:'Completada'}).eq('id',id); loadTasks(); }
+async function deleteTask(id){ if(confirm('¿Eliminar esta tarea?')){ await sb.from('tareas').delete().eq('id',id); loadTasks(); } }
+
+// ==================== CLIENTES ====================
+async function loadClients(){
+  const {data:clientes} = await sb.from('clientes').select('*').order('nombre');
+  allClients = clientes || [];
+  if(!clientes||clientes.length===0){
+    document.getElementById('clients-container').innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">👥</div><div class="empty-state-text">No hay clientes. Agregá el primero.</div></div>';
+    return;
+  }
+  document.getElementById('clients-container').innerHTML=clientes.map(c=>`
+    <div class="client-card" onclick="showClientDetail('${c.id}')">
+      <div class="client-avatar">${(c.nombre||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+      <div class="client-name">${c.nombre}</div>
+      <div class="client-biz">${c.rubro||'—'} · ${c.ciudad||'—'}</div>
+      <div class="client-tags">
+        ${c.plan?`<span class="badge badge-purple">${c.plan}</span>`:''}
+        <span class="badge badge-green">Activo</span>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text3)">Contacto: ${c.contacto||'—'}</div>
+    </div>`).join('');
+}
+
+async function showClientDetail(id){
+  const c = allClients.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('modal-title').textContent = c.nombre;
+  document.getElementById('modal-body').innerHTML=`
+    <div class="detail-row"><span class="detail-key">Rubro</span><span class="detail-val">${c.rubro||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Contacto</span><span class="detail-val">${c.contacto||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">WhatsApp</span><span class="detail-val">${c.whatsapp||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val">${c.email||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Ciudad</span><span class="detail-val">${c.ciudad||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Plan</span><span class="detail-val">${c.plan||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Monto mensual</span><span class="detail-val">${c.monto_mensual?'$'+c.monto_mensual.toLocaleString('es-AR'):'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Fecha inicio</span><span class="detail-val">${c.fecha_inicio||'—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Notas</span><span class="detail-val">${c.notas||'—'}</span></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal()">Cerrar</button>
+      <button class="btn btn-primary" onclick="deleteClient('${c.id}')">Eliminar cliente</button>
+    </div>`;
+  document.getElementById('main-modal').classList.add('open');
+}
+
+async function deleteClient(id){ if(confirm('¿Eliminar este cliente? Esta acción no se puede deshacer.')){ await sb.from('clientes').delete().eq('id',id); closeModal(); loadClients(); } }
+
+// ==================== CHECKLIST ====================
+async function loadChecklistClients(){
+  const {data:clientes} = await sb.from('clientes').select('id,nombre').order('nombre');
+  const sel = document.getElementById('checklist-client-select');
+  sel.innerHTML='<option value="">— Elegir cliente —</option>'+(clientes||[]).map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+}
+
+async function loadChecklist(){
+  const clientId = document.getElementById('checklist-client-select').value;
+  if(!clientId){ document.getElementById('checklist-container').innerHTML='<div class="empty-state"><div class="empty-state-icon">☑️</div><div class="empty-state-text">Seleccioná un cliente</div></div>'; return; }
+  const {data:items} = await sb.from('checklist_items').select('*').order('categoria');
+  const {data:estado} = await sb.from('checklist_cliente').select('*').eq('cliente_id',clientId);
+
+  const completadosIds = (estado||[]).filter(e=>e.completado).map(e=>e.item_id);
+  const categorias = [...new Set((items||[]).map(i=>i.categoria))];
+
+  document.getElementById('checklist-container').innerHTML=`<div class="checklist-section">${categorias.map(cat=>`
+    <div class="table-card">
+      <div class="table-header"><span class="table-title">${cat}</span></div>
+      <div style="padding:12px 14px"><div class="check-list">${(items||[]).filter(i=>i.categoria===cat).map(item=>{
+        const checked=completadosIds.includes(item.id);
+        return `<div class="check-item ${checked?'checked':''}" onclick="toggleCheck('${clientId}','${item.id}',this)">
+          <div class="check-box">${checked?'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>':''}</div>
+          <span class="check-label">${item.nombre}</span>
+        </div>`;
+      }).join('')}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+async function toggleCheck(clientId, itemId, el){
+  const isChecked = !el.classList.contains('checked');
+  const {data:existing} = await sb.from('checklist_cliente').select('*').eq('cliente_id',clientId).eq('item_id',itemId).single();
+  if(existing){
+    await sb.from('checklist_cliente').update({completado:isChecked}).eq('id',existing.id);
+  } else {
+    await sb.from('checklist_cliente').insert({cliente_id:clientId,item_id:itemId,completado:isChecked});
+  }
+  el.classList.toggle('checked');
+  const box=el.querySelector('.check-box');
+  box.innerHTML=isChecked?'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>':'';
+}
+
+// ==================== REUNIONES ====================
+async function loadMeets(){
+  const {data:meets} = await sb.from('reuniones').select('*, clientes(nombre)').order('fecha');
+  if(!meets||meets.length===0){
+    document.getElementById('meets-container').innerHTML='<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">No hay reuniones agendadas.</div></div>';
+    document.getElementById('meet-total').textContent='0';
+    document.getElementById('meet-conf').textContent='0';
+    document.getElementById('meet-pend').textContent='0';
+    document.getElementById('meet-week').textContent='0';
+    return;
+  }
+  const conf=meets.filter(m=>m.estado==='Confirmada').length;
+  const pend=meets.filter(m=>m.estado!=='Confirmada').length;
+  const semana=meets.filter(m=>{
+    if(!m.fecha) return false;
+    const diff=Math.ceil((new Date(m.fecha)-today)/(1000*60*60*24));
+    return diff>=0&&diff<=7;
+  }).length;
+  document.getElementById('meet-total').textContent=meets.length;
+  document.getElementById('meet-conf').textContent=conf;
+  document.getElementById('meet-pend').textContent=pend;
+  document.getElementById('meet-week').textContent=semana;
+
+  document.getElementById('meets-container').innerHTML=meets.map(m=>{
+    const fecha = m.fecha ? new Date(m.fecha+'T12:00:00') : null;
+    const dia = fecha ? fecha.getDate() : '—';
+    const mes = fecha ? fecha.toLocaleDateString('es-AR',{month:'short'}).replace('.','') : '—';
+    return `<div class="meet-card">
+      <div class="meet-date-box"><div class="meet-day">${dia}</div><div class="meet-month">${mes}</div></div>
+      <div class="meet-info">
+        <div class="meet-title">${m.titulo||'Sin título'}</div>
+        <div class="meet-meta">${m.hora||''} ${m.plataforma?'· '+m.plataforma:''} ${m.clientes?'· '+m.clientes.nombre:''} ${m.participantes?'· '+m.participantes:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="badge ${m.estado==='Confirmada'?'badge-green':'badge-amber'}">${m.estado}</span>
+        <button class="btn btn-sm" onclick="deleteMeet('${m.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function deleteMeet(id){ if(confirm('¿Eliminar esta reunión?')){ await sb.from('reuniones').delete().eq('id',id); loadMeets(); } }
+
+// ==================== KANBAN ====================
+async function loadKanban(){
+  const {data:cards} = await sb.from('kanban').select('*').order('created_at');
+  const cols={todo:[],prog:[],rev:[],done:[]};
+  const colMap={'Por hacer':'todo','En progreso':'prog','En revisión':'rev','Listo':'done'};
+  (cards||[]).forEach(c=>{ const k=colMap[c.columna]; if(k) cols[k].push(c); });
+  ['todo','prog','rev','done'].forEach(col=>{
+    document.getElementById('k-cnt-'+col).textContent=cols[col].length;
+    document.getElementById('k-'+col).innerHTML=cols[col].map(c=>`
+      <div class="kanban-card">
+        <div class="kanban-card-title">${c.titulo}</div>
+        <div class="kanban-card-meta">${c.asignado_a||'Sin asignar'}${c.fecha_limite?' · '+c.fecha_limite:''}</div>
+        <div class="kanban-card-footer">
+          <span class="avatar-chip">${(c.asignado_a||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</span>
+          <div style="display:flex;gap:4px">
+            ${col!=='done'?`<button class="btn btn-sm" onclick="moverKanban('${c.id}','${c.columna}')">→</button>`:''}
+            <button class="btn btn-sm" onclick="deleteKanban('${c.id}')">✕</button>
+          </div>
+        </div>
+      </div>`).join('')||'<div style="font-size:11px;color:var(--text3);text-align:center;padding:12px">Vacío</div>';
+  });
+}
+
+async function moverKanban(id, colActual){
+  const orden=['Por hacer','En progreso','En revisión','Listo'];
+  const idx=orden.indexOf(colActual);
+  if(idx<orden.length-1){ await sb.from('kanban').update({columna:orden[idx+1]}).eq('id',id); loadKanban(); }
+}
+async function deleteKanban(id){ if(confirm('¿Eliminar esta tarjeta?')){ await sb.from('kanban').delete().eq('id',id); loadKanban(); } }
+
+// ==================== MODAL / FORMULARIOS ====================
+function openAddModal(){
+  const forms = {
+    billing: { title:'Registrar pago', html: billingForm() },
+    tasks: { title:'Nueva tarea', html: taskForm() },
+    clients: { title:'Nuevo cliente', html: clientForm() },
+    meets: { title:'Agendar reunión', html: meetForm() },
+    kanban: { title:'Nueva tarjeta kanban', html: kanbanForm() },
+    checklist: { title:'Nuevo item checklist', html: checklistItemForm() },
+  };
+  const f = forms[currentPage];
+  if(!f) return;
+  document.getElementById('modal-title').textContent = f.title;
+  document.getElementById('modal-body').innerHTML = f.html;
+  populateClientSelects();
+  document.getElementById('main-modal').classList.add('open');
+}
+
+function clientOptions(id='client-select'){
+  return allClients.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+}
+
+function billingForm(){
+  const mesActual = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  return `
+  <div class="field-group"><label class="field-label">Cliente</label><select id="f-client"><option value="">Seleccionar...</option></select></div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Monto ($)</label><input type="number" id="f-monto" placeholder="0"/></div>
+    <div class="field-group"><label class="field-label">Mes</label><input type="text" id="f-mes" value="${mesActual}" placeholder="YYYY-MM"/></div>
+  </div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Fecha de pago</label><input type="date" id="f-fecha"/></div>
+    <div class="field-group"><label class="field-label">Estado</label><select id="f-estado"><option>Pendiente</option><option>Pagado</option><option>En revisión</option></select></div>
+  </div>
+  <div class="field-group"><label class="field-label">Notas</label><textarea id="f-notas" rows="2" placeholder="Opcional..."></textarea></div>
+  <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="savePago()">Guardar pago</button></div>`;
+}
+
+function taskForm(){
+  return `
+  <div class="field-group"><label class="field-label">Cliente</label><select id="f-client"><option value="">Sin cliente</option></select></div>
+  <div class="field-group"><label class="field-label">Descripción</label><textarea id="f-desc" rows="2" placeholder="Qué hay que hacer..."></textarea></div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Asignado a</label><input type="text" id="f-asignado" placeholder="Nombre"/></div>
+    <div class="field-group"><label class="field-label">Fecha límite</label><input type="date" id="f-fecha"/></div>
+  </div>
+  <div class="field-group"><label class="field-label">Prioridad</label><select id="f-prioridad"><option>Alta</option><option selected>Media</option><option>Baja</option></select></div>
+  <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveTask()">Guardar tarea</button></div>`;
+}
+
+function clientForm(){
+  return `
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Nombre del negocio</label><input type="text" id="f-nombre" placeholder="Ej: Clínica X"/></div>
+    <div class="field-group"><label class="field-label">Rubro</label><input type="text" id="f-rubro" placeholder="Ej: Odontología"/></div>
+  </div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Contacto principal</label><input type="text" id="f-contacto"/></div>
+    <div class="field-group"><label class="field-label">WhatsApp</label><input type="text" id="f-whatsapp" placeholder="+54..."/></div>
+  </div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Email</label><input type="text" id="f-email"/></div>
+    <div class="field-group"><label class="field-label">Ciudad</label><input type="text" id="f-ciudad"/></div>
+  </div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Plan</label><select id="f-plan"><option>Básico</option><option>Pro</option><option>Enterprise</option></select></div>
+    <div class="field-group"><label class="field-label">Monto mensual ($)</label><input type="number" id="f-monto" placeholder="0"/></div>
+  </div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Fecha de inicio</label><input type="date" id="f-fecha"/></div>
+  </div>
+  <div class="field-group"><label class="field-label">Notas</label><textarea id="f-notas" rows="2" placeholder="Info relevante..."></textarea></div>
+  <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveClient()">Crear ficha</button></div>`;
+}
+
+function meetForm(){
+  return `
+  <div class="field-group"><label class="field-label">Título</label><input type="text" id="f-titulo" placeholder="Ej: Revisión mensual — Cliente X"/></div>
+  <div class="field-group"><label class="field-label">Cliente</label><select id="f-client"><option value="">Sin cliente</option></select></div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Fecha</label><input type="date" id="f-fecha"/></div>
+    <div class="field-group"><label class="field-label">Hora</label><input type="text" id="f-hora" placeholder="10:00 hs"/></div>
+  </div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Plataforma</label><select id="f-plataforma"><option>Google Meet</option><option>Zoom</option><option>Presencial</option><option>Teléfono</option></select></div>
+    <div class="field-group"><label class="field-label">Estado</label><select id="f-estado"><option>Sin confirmar</option><option>Confirmada</option></select></div>
+  </div>
+  <div class="field-group"><label class="field-label">Participantes</label><input type="text" id="f-participantes" placeholder="Nombres separados por coma"/></div>
+  <div class="field-group"><label class="field-label">Notas</label><textarea id="f-notas" rows="2" placeholder="Opcional..."></textarea></div>
+  <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveMeet()">Agendar</button></div>`;
+}
+
+function kanbanForm(){
+  return `
+  <div class="field-group"><label class="field-label">Título de la tarea</label><input type="text" id="f-titulo" placeholder="Qué hay que hacer..."/></div>
+  <div class="field-row">
+    <div class="field-group"><label class="field-label">Asignado a</label><input type="text" id="f-asignado" placeholder="Nombre"/></div>
+    <div class="field-group"><label class="field-label">Columna</label><select id="f-columna"><option>Por hacer</option><option>En progreso</option><option>En revisión</option><option>Listo</option></select></div>
+  </div>
+  <div class="field-group"><label class="field-label">Fecha límite</label><input type="date" id="f-fecha"/></div>
+  <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveKanban()">Agregar tarjeta</button></div>`;
+}
+
+function checklistItemForm(){
+  return `
+  <div class="field-group"><label class="field-label">Nombre del item</label><input type="text" id="f-nombre" placeholder="Ej: Prueba de integración"/></div>
+  <div class="field-group"><label class="field-label">Categoría</label><select id="f-categoria"><option>Flujo conversacional</option><option>Integración técnica</option><option>Validación</option><option>Entrega</option></select></div>
+  <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveChecklistItem()">Agregar item</button></div>`;
+}
+
+function populateClientSelects(){
+  document.querySelectorAll('#f-client').forEach(sel=>{
+    if(sel.options.length<=1) sel.innerHTML=(sel.options[0]?.outerHTML||'')+clientOptions();
+  });
+}
+
+// SAVES
+async function savePago(){
+  const clientId=document.getElementById('f-client').value;
+  const monto=parseFloat(document.getElementById('f-monto').value)||0;
+  const mes=document.getElementById('f-mes').value;
+  const fecha=document.getElementById('f-fecha').value||null;
+  const estado=document.getElementById('f-estado').value;
+  const notas=document.getElementById('f-notas').value;
+  await sb.from('pagos').insert({cliente_id:clientId||null,monto,mes,fecha_pago:fecha,estado,notas});
+  closeModal(); loadBilling();
+}
+
+async function saveTask(){
+  const clientId=document.getElementById('f-client').value;
+  const desc=document.getElementById('f-desc').value;
+  const asignado=document.getElementById('f-asignado').value;
+  const fecha=document.getElementById('f-fecha').value||null;
+  const prioridad=document.getElementById('f-prioridad').value;
+  await sb.from('tareas').insert({cliente_id:clientId||null,descripcion:desc,asignado_a:asignado,fecha_limite:fecha,prioridad,estado:'Pendiente'});
+  closeModal(); loadTasks();
+}
+
+async function saveClient(){
+  const data={
+    nombre:document.getElementById('f-nombre').value,
+    rubro:document.getElementById('f-rubro').value,
+    contacto:document.getElementById('f-contacto').value,
+    whatsapp:document.getElementById('f-whatsapp').value,
+    email:document.getElementById('f-email').value,
+    ciudad:document.getElementById('f-ciudad').value,
+    plan:document.getElementById('f-plan').value,
+    monto_mensual:parseFloat(document.getElementById('f-monto').value)||null,
+    fecha_inicio:document.getElementById('f-fecha').value||null,
+    notas:document.getElementById('f-notas').value,
+  };
+  await sb.from('clientes').insert(data);
+  closeModal(); loadClients();
+}
+
+async function saveMeet(){
+  const data={
+    titulo:document.getElementById('f-titulo').value,
+    cliente_id:document.getElementById('f-client').value||null,
+    fecha:document.getElementById('f-fecha').value||null,
+    hora:document.getElementById('f-hora').value,
+    plataforma:document.getElementById('f-plataforma').value,
+    estado:document.getElementById('f-estado').value,
+    participantes:document.getElementById('f-participantes').value,
+    notas:document.getElementById('f-notas').value,
+  };
+  await sb.from('reuniones').insert(data);
+  closeModal(); loadMeets();
+}
+
+async function saveKanban(){
+  const data={
+    titulo:document.getElementById('f-titulo').value,
+    asignado_a:document.getElementById('f-asignado').value,
+    columna:document.getElementById('f-columna').value,
+    fecha_limite:document.getElementById('f-fecha').value||null,
+  };
+  await sb.from('kanban').insert(data);
+  closeModal(); loadKanban();
+}
+
+async function saveChecklistItem(){
+  const data={
+    nombre:document.getElementById('f-nombre').value,
+    categoria:document.getElementById('f-categoria').value,
+  };
+  await sb.from('checklist_items').insert(data);
+  closeModal();
+}
+
+// MODAL UTILS
+function closeModal(){ document.getElementById('main-modal').classList.remove('open'); }
+function closeModalOutside(e){ if(e.target===document.getElementById('main-modal')) closeModal(); }
+
+// INIT
+loadBilling();
+</script>
+</body>
+</html>
